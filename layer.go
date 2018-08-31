@@ -20,6 +20,18 @@ import (
 	"math"
 	"gonum.org/v1/gonum/mat"
 )
+func ImportNeuralNetwork(weightsFile string) *NeuralNetwork {
+	//
+	//
+	nn := &NeuralNetwork{}
+
+	// Convert WeightsFile into an Array -> Matrix
+
+	// Generate the Layers
+
+	return nn
+}
+
 func NewNeuralNetwork(inputSize int, layerDim []int, aFunc []ActivationFunction) *NeuralNetwork {
 	//
 	//
