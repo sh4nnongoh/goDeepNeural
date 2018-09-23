@@ -18,8 +18,11 @@ If there are L layers than out layer y = a[L]
 import (
 	"fmt"
 	"math"
+	"math/rand"
+
 	"gonum.org/v1/gonum/mat"
 )
+
 func ImportNeuralNetwork(weightsFile string) *NeuralNetwork {
 	//
 	//
@@ -47,7 +50,7 @@ type NeuralNetwork struct {
 func (nn *NeuralNetwork) init(inputSize int, layerDim []int, aFunc []ActivationFunction) {
 	/*
 	*	Initialize the model with the given layerDim of size L
-	*/
+	 */
 	var prevDim = inputSize
 	for i, dim := range layerDim {
 		nn.Layer = append(nn.Layer, NewLayer(dim, prevDim, aFunc[i]))
@@ -55,22 +58,22 @@ func (nn *NeuralNetwork) init(inputSize int, layerDim []int, aFunc []ActivationF
 	}
 }
 
-func (nn *NeuralNetwork) modelForwardPropogate(X *mat.Dense) *mat.Dense{
+func (nn *NeuralNetwork) modelForwardPropogate(X *mat.Dense) *mat.Dense {
 	/*
 	*	Implement forward propagation
-	*/
-	l.linearActivationForward(X)
-	for i,l := range nn.Layer[1:] {
+	 */
+	nn.Layer[0].linearActivationForward(X)
+	for i, l := range nn.Layer[1:] {
 		l.linearActivationForward(nn.Layer[i-1].A)
 	}
-	return nn.Layer[len(n.Layer)-1].A
+	return nn.Layer[len(nn.Layer)-1].A
 }
 
-func (nn *NeuralNetwork) modelBackwardPropogate(A *mat.Dense) *mat.Dense{
+func (nn *NeuralNetwork) modelBackwardPropogate(A *mat.Dense) *mat.Dense {
 	/*
 	*	Implement Backward propagation
-	*/
-	for i,l := range nn.Layer {
+	 */
+	for _, l := range nn.Layer {
 		A = l.linearActivationBackward(A)
 	}
 	return A
@@ -79,29 +82,32 @@ func (nn *NeuralNetwork) modelBackwardPropogate(A *mat.Dense) *mat.Dense{
 func (nn *NeuralNetwork) computeCost(AL *mat.Dense, Y *mat.Dense) {
 	/*
 	*	Compares the calculated values against the correct values
-	*/
+	 */
 }
 
-func (nn *NeuralNetwork) updateParameters(learningRate float64) *mat.Dense{
+func (nn *NeuralNetwork) updateParameters(learningRate float64) *mat.Dense {
 	/*
 	*	Update parameters using gradient descent
-	*/
-	for i,l := range nn.Layer {
+	 */
+	for _, l := range nn.Layer {
 		// update l.W base on l.AGrad and learningRate
+		fmt.Println(l.W)
 	}
 	// return all Ws
+	return nil
 }
 
-func (nn *NeuralNetwork) predict(X *mat.Dense, Y *mat.Dense) *mat.Dense{
+func (nn *NeuralNetwork) predict(X *mat.Dense, Y *mat.Dense) *mat.Dense {
 	/*
 	*	Perform prediction based on the current trained model nn
-	*/
+	 */
 	//return p
+	return nil
 }
 
 func NewLayer(layerDimCurr, layerDimPrev int, aFunc ActivationFunction) *Layer {
 	l := &Layer{}
-	
+
 	matrixSize := layerDimCurr * layerDimPrev
 	w := make([]float64, matrixSize)
 	for i := 0; i < matrixSize; i++ {
@@ -119,22 +125,22 @@ func NewLayer(layerDimCurr, layerDimPrev int, aFunc ActivationFunction) *Layer {
 type Layer struct {
 	//x []*float64 // input data of shape (input size, example size)
 	W *mat.Dense // weights of each synapses of shape (neuron size, input size)
-	b *mat.Dense// bias for each of the synapses (neuron size, 1)
+	b *mat.Dense // bias for each of the synapses (neuron size, 1)
 
 	ActivationFunction ActivationFunction `json:"-"`
-	A *mat.Dense // current activations of shape (1, neuron size)
-	APrev *mat.Dense // activations from the previous layer (1, input size)
-	AGrad *mat.Dense // gradients of activation data of shape (1, neuron size)
+	A                  *mat.Dense         // current activations of shape (1, neuron size)
+	APrev              *mat.Dense         // activations from the previous layer (1, input size)
+	AGrad              *mat.Dense         // gradients of activation data of shape (1, neuron size)
 }
 
 func (l *Layer) init(W, b, A, AGrad *mat.Dense, aFunc ActivationFunction) {
 	/*
-	*	Initialize the layer with the given variables 
-	*/
-	l.W := W
-	l.b := b
-	l.A := A
-	l.AGrad := AGrad
+	*	Initialize the layer with the given variables
+	 */
+	l.W = W
+	l.b = b
+	l.A = A
+	l.AGrad = AGrad
 
 	l.ActivationFunction = aFunc
 }
@@ -142,33 +148,37 @@ func (l *Layer) init(W, b, A, AGrad *mat.Dense, aFunc ActivationFunction) {
 func (l *Layer) linearActivationForward(APrev *mat.Dense) *mat.Dense {
 	/*
 	*	Implement the linear part of a layer's foward propagation with Activation
-	*/
+	 */
 	// var Z mat.Dense
 	// Z.Mul(l.W,APrev)
 	// Z.Add(Z,l.b)
 	// l.A = l.Activate(Z)
 	// return l.A
 	l.APrev = APrev
-	l.A.Add(l.A.Product(l.W, APrev), l.b)
-	l.A.Apply(l.ActivationFunction, l.A)
+	// l.A.Add(l.A.Product(l.W, APrev), l.b)
+	// l.A.Apply(l.ActivationFunction, l.A)
 	return l.A
 }
 
 func (l *Layer) linearActivationBackward(dA *mat.Dense) *mat.Dense {
 	/*
 	*	Implement the linear part of a layer's backward propagation with Activation
-	*/
+	 */
 	// var Z mat.Dense
 	// Z.Mul(l.W,APrev)
 	// Z.Add(Z,l.b)
 	// l.A = l.Activate(Z)
 	// return l.A
-	scale := 1.0/l.APrev.Len()
-	dW := mat.ScaleVec(scale, mat.Dot(dA, l.APrev))
-	db := mat.ScaleVec(scale, mat.Sum(dA))
+
+	// Dense does not have ScaleVec
+	// scale := 1.0 / l.APrev.Len()
+	// dW := mat.ScaleVec(scale, mat.Dot(dA, l.APrev))
+	// db := mat.ScaleVec(scale, mat.Sum(dA))
+
+	return nil
 }
 
-func ReLU(i,j int, x float64) float64 {
+func ReLU(i, j int, x float64) float64 {
 	const (
 		Overflow  = 1.0239999999999999e+03
 		Underflow = -1.0740e+03
@@ -195,7 +205,7 @@ func ReLU(i,j int, x float64) float64 {
 	}
 }
 
-func Sigmoid(i,j int, x float64) float64 {
+func Sigmoid(i, j int, x float64) float64 {
 	const (
 		Overflow  = 1.0239999999999999e+03
 		Underflow = -1.0740e+03
@@ -213,7 +223,7 @@ func Sigmoid(i,j int, x float64) float64 {
 	return 1 / (1 + math.Exp(x))
 }
 
-func SoftMax(i,j int, x float64) []float64 {
+func SoftMax(i, j int, x []float64) []float64 {
 	var max float64 = x[0]
 	for _, n := range x {
 		max = math.Max(max, n)
@@ -235,4 +245,6 @@ func SoftMax(i,j int, x float64) []float64 {
 
 type ActivationFunction func(int, int, float64) float64
 
-
+func main() {
+	fmt.Println("Hello World!")
+}
