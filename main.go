@@ -131,6 +131,10 @@ type Layer struct {
 	A                  *mat.Dense         // current activations of shape (1, neuron size)
 	APrev              *mat.Dense         // activations from the previous layer (1, input size)
 	AGrad              *mat.Dense         // gradients of activation data of shape (1, neuron size)
+
+	dW     *mat.Dense // weights of each synapses of shape (neuron size, input size)
+	db     *mat.Dense // bias for each of the synapses (neuron size, 1)
+	dAPrev *mat.Dense // activations from the previous layer (1, input size)
 }
 
 func (l *Layer) init(W, b, A, AGrad *mat.Dense, aFunc ActivationFunction) {
@@ -155,26 +159,28 @@ func (l *Layer) linearActivationForward(APrev *mat.Dense) *mat.Dense {
 	// l.A = l.Activate(Z)
 	// return l.A
 	l.APrev = APrev
-	// l.A.Add(l.A.Product(l.W, APrev), l.b)
+	l.A.Product(l.W, APrev)
+	l.A.Add(l.A, l.b)
 	// l.A.Apply(l.ActivationFunction, l.A)
 	return l.A
 }
 
-func (l *Layer) linearActivationBackward(dA *mat.Dense) *mat.Dense {
+func (l *Layer) linearActivationBackward(dZ *mat.Dense) *mat.Dense {
 	/*
 	*	Implement the linear part of a layer's backward propagation with Activation
 	 */
-	// var Z mat.Dense
-	// Z.Mul(l.W,APrev)
-	// Z.Add(Z,l.b)
-	// l.A = l.Activate(Z)
-	// return l.A
 
 	// Dense does not have ScaleVec
 	// scale := 1.0 / l.APrev.Len()
 	// dW := mat.ScaleVec(scale, mat.Dot(dA, l.APrev))
 	// db := mat.ScaleVec(scale, mat.Sum(dA))
-
+	// dA_prev = np.dot(W.T,dZ)
+	var row, _ = l.APrev.Dims()
+	l.dW.Mul(dZ, l.APrev.T())
+	l.dW.Scale(1/float64(row), l.dW)
+	MatrixSumKeepDims(l.db)
+	l.db.Scale(1/float64(row), l.db)
+	l.dAPrev.Mul(l.W.T(), dZ)
 	return nil
 }
 
@@ -245,6 +251,64 @@ func SoftMax(i, j int, x []float64) []float64 {
 
 type ActivationFunction func(int, int, float64) float64
 
+func MatrixSumKeepDims(m *mat.Dense) *mat.Dense {
+	var row, col = m.Dims()
+	sum := 0.0
+	for i := 0; i < row; i++ {
+		for j := 0; j < col; j++ {
+			sum += m.At(i, j)
+		}
+	}
+
+	for i := 0; i < row; i++ {
+		for j := 0; j < col; j++ {
+			m.Set(i, j, sum)
+		}
+	}
+
+	return m
+}
+
 func main() {
 	fmt.Println("Hello World!")
+
+	// var Z mat.Dense
+	// Z.Mul(l.W,APrev)
+	// Z.Add(Z,l.b)
+	// l.A = l.Activate(Z)
+
+	// NewDense retuns a pointer to the new Mat object
+	a := mat.NewDense(4, 3, []float64{
+		1, 0, 0,
+		1, 0, 1,
+		0, 1, 1,
+		1, 1, 1,
+	})
+	b := mat.NewDense(3, 1, []float64{
+		0,
+		0,
+		1,
+	})
+	fmt.Println("a : ", mat.Formatted(a, mat.Prefix("    "), mat.Squeeze()))
+	fmt.Println("b : ", mat.Formatted(b, mat.Prefix("    "), mat.Squeeze()))
+
+	q := &a
+	w := &b
+	fmt.Println("a : ", mat.Formatted(*q, mat.Prefix("    "), mat.Squeeze()))
+	fmt.Println("b : ", mat.Formatted(*w, mat.Prefix("    "), mat.Squeeze()))
+
+	// This declaration return the actual object
+	var c mat.Dense
+	e := &c
+	e.Mul(*q, *w)
+	fmt.Println("e : ", mat.Formatted(e, mat.Prefix("    "), mat.Squeeze()))
+	fmt.Println("c : ", mat.Formatted(&c, mat.Prefix("    "), mat.Squeeze()))
+	var row, col = e.Dims()
+	fmt.Println("dims(e): ", row, col)
+
+	e.Scale(1/float64(row), e)
+	fmt.Println("e : ", mat.Formatted(e, mat.Prefix("    "), mat.Squeeze()))
+
+	fmt.Println("e sum : ", mat.Formatted(MatrixSumKeepDims(e), mat.Prefix("    "), mat.Squeeze()))
+
 }
