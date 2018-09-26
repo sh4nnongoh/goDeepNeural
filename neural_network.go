@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math"
 
 	"gonum.org/v1/gonum/mat"
 )
@@ -47,7 +48,7 @@ func (nn *NeuralNetwork) modelForwardPropogate(X *mat.Dense) *mat.Dense {
 	 */
 	nn.Layer[0].linearActivationForward(X)
 	for i, l := range nn.Layer[1:] {
-		l.linearActivationForward(nn.Layer[i-1].A)
+		l.linearActivationForward(nn.Layer[i].A)
 	}
 	return nn.Layer[len(nn.Layer)-1].A
 }
@@ -66,6 +67,23 @@ func (nn *NeuralNetwork) computeCost(AL *mat.Dense, Y *mat.Dense) {
 	/*
 	*	Compares the calculated values against the correct values
 	 */
+
+	//AL := nn.Layer[len(nn.Layer)-1].A
+
+	var tmp1, tmp2 mat.Dense
+	var row, _ = Y.Dims()
+	tmp1.Apply(func(i, j int, v float64) float64 { return math.Log(v) }, AL)
+	tmp1.Mul(Y, tmp1.T())
+	tmp1.Scale(1/float64(row), &tmp1)
+	// cost = (1./m) * (-np.dot(Y,np.log(AL).T) - np.dot(1-Y, np.log(1-AL).T))
+
+	// l.dW.Mul(dZ, l.APrev.T())
+
+	// l.dW.Mul(dZ, l.APrev.T())
+	// l.dW.Scale(1/float64(row), l.dW)
+	// MatrixSumKeepDims(l.db)
+	// l.db.Scale(1/float64(row), l.db)
+	// l.dAPrev.Mul(l.W.T(), dZ)
 }
 
 func (nn *NeuralNetwork) updateParameters(learningRate float64) *mat.Dense {

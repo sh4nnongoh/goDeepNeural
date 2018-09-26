@@ -17,6 +17,7 @@ If there are L layers than out layer y = a[L]
 
 import (
 	"fmt"
+	"math"
 
 	"gonum.org/v1/gonum/mat"
 )
@@ -98,4 +99,6 @@ func main() {
 	out := layer.linearActivationForward(x)
 	fmt.Println("layer matrix : ", mat.Formatted(out))
 
+	e.Apply(func(i, j int, v float64) float64 { return math.Log(v) }, e)
+	fmt.Println("test mat log : ", mat.Formatted(e))
 }
