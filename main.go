@@ -39,6 +39,17 @@ func MatrixSumKeepDims(m *mat.Dense) *mat.Dense {
 
 	return m
 }
+func MatrixSum(m *mat.Dense) float64 {
+	var row, col = m.Dims()
+	sum := 0.0
+	for i := 0; i < row; i++ {
+		for j := 0; j < col; j++ {
+			sum += m.At(i, j)
+		}
+	}
+
+	return sum
+}
 
 func main() {
 	fmt.Println("Hello World!")
@@ -92,13 +103,32 @@ func main() {
 
 	var layer = NewLayerRandomWeight(3, 3, NewReLUFunc())
 	x := mat.NewDense(3, 1, []float64{
-		0,
-		0,
+		1,
+		1,
 		1,
 	})
 	out := layer.linearActivationForward(x)
-	fmt.Println("layer matrix : ", mat.Formatted(out))
+	fmt.Println("layer matrix out : ", mat.Formatted(out))
 
 	e.Apply(func(i, j int, v float64) float64 { return math.Log(v) }, e)
 	fmt.Println("test mat log : ", mat.Formatted(e))
+
+	var test mat.Dense
+	test.Mul(out, x.T())
+	fmt.Println("test : ", mat.Formatted(&test))
+	row, col = test.Dims()
+	fmt.Println("test.Dims : ", row, col)
+	fmt.Println("Dot Product : ", MatrixSum(&test))
+
+	tmp1 := mat.NewDense(3, 3, make([]float64, 9))
+	row, col = b.Dims()
+	fmt.Println("b.Dims : ", row, col)
+	row, col = x.Dims()
+	fmt.Println("x.Dims : ", row, col)
+	row, col = b.T().Dims()
+	fmt.Println("b.T().Dims : ", row, col)
+	//var row, _ = Y.Dims()
+	x.Apply(func(i, j int, v float64) float64 { return math.Log(v) }, x)
+	tmp1.Mul(x, b.T())
+	fmt.Println("tmp1 : ", mat.Formatted(tmp1))
 }

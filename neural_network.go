@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"math"
 
@@ -28,6 +29,7 @@ func NewNeuralNetwork(inputSize int, layerDim []int, aFunc []ActivationFunction)
 }
 
 type NeuralNetwork struct {
+	L     int // number of layers
 	Layer []*Layer
 }
 
@@ -63,27 +65,27 @@ func (nn *NeuralNetwork) modelBackwardPropogate(A *mat.Dense) *mat.Dense {
 	return A
 }
 
-func (nn *NeuralNetwork) computeCost(AL *mat.Dense, Y *mat.Dense) {
+func (nn *NeuralNetwork) computeCost(AL *mat.Dense, Y *mat.Dense) (*mat.Dense, error) {
 	/*
 	*	Compares the calculated values against the correct values
 	 */
-
-	//AL := nn.Layer[len(nn.Layer)-1].A
-
-	var tmp1, tmp2 mat.Dense
-	var row, _ = Y.Dims()
-	tmp1.Apply(func(i, j int, v float64) float64 { return math.Log(v) }, AL)
-	tmp1.Mul(Y, tmp1.T())
-	tmp1.Scale(1/float64(row), &tmp1)
+	rowAL, colAL := AL.Dims()
+	rowY, colY := Y.Dims()
+	if (rowAL != rowY) && (colAL != colY) {
+		return nil, errors.New("Dimensions of inputs not equal!")
+	}
 	// cost = (1./m) * (-np.dot(Y,np.log(AL).T) - np.dot(1-Y, np.log(1-AL).T))
+	var tmp1, tmp2, tmp3 mat.Dense
+	tmp1.Apply(func(i, j int, v float64) float64 { return math.Log(v) }, AL)
+	tmp1.Mul(&tmp1, Y.T())
+	tmp1.Scale(-1/float64(rowAL), &tmp1)
+	tmp2.Apply(func(i, j int, v float64) float64 { return 1 - v }, AL)
+	tmp2.Apply(func(i, j int, v float64) float64 { return math.Log(v) }, &tmp2)
+	tmp3.Apply(func(i, j int, v float64) float64 { return 1 - v }, Y)
+	tmp1.Mul(&tmp3, tmp2.T())
+	//cost := (-1.0/float64(row))*MatrixSum(&tmp1) - MatrixSum(&tmp2)
 
-	// l.dW.Mul(dZ, l.APrev.T())
-
-	// l.dW.Mul(dZ, l.APrev.T())
-	// l.dW.Scale(1/float64(row), l.dW)
-	// MatrixSumKeepDims(l.db)
-	// l.db.Scale(1/float64(row), l.db)
-	// l.dAPrev.Mul(l.W.T(), dZ)
+	return &tmp1, nil
 }
 
 func (nn *NeuralNetwork) updateParameters(learningRate float64) *mat.Dense {
